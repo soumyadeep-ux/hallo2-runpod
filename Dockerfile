@@ -4,8 +4,9 @@
 # Build: docker build -t yourusername/hallo2-runpod:v1 .
 # Push:  docker push yourusername/hallo2-runpod:v1
 
-# Use CUDA 12.4 for Blackwell GPU (sm_120) compatibility
-FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
+# CUDA 11.8 works with A6000, A40, RTX 4090, H100 (sm_86/sm_89/sm_90)
+# Note: Blackwell (sm_120) excluded in endpoint settings
+FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -45,8 +46,8 @@ RUN git clone https://github.com/fudan-generative-vision/hallo2.git /app/hallo2
 
 WORKDIR /app/hallo2
 
-# Install PyTorch 2.5 with CUDA 12.4 for Blackwell (sm_120) support
-RUN pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu124
+# Install PyTorch 2.2.2 with CUDA 11.8 (stable, works with A6000/A40/H100)
+RUN pip install torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2 --index-url https://download.pytorch.org/whl/cu118
 
 # Install requirements (excluding torch as it's already installed)
 COPY requirements.txt /app/requirements.txt
@@ -62,8 +63,8 @@ RUN pip install \
     requests \
     huggingface_hub
 
-# Install xformers for memory efficiency (version compatible with PyTorch 2.5)
-RUN pip install xformers==0.0.28.post3 || pip install xformers || true
+# Install xformers for memory efficiency (compatible with PyTorch 2.2.2)
+RUN pip install xformers==0.0.25.post1 || pip install xformers || true
 
 # Create directories for models and outputs
 RUN mkdir -p /app/hallo2/pretrained_models \
