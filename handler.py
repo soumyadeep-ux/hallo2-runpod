@@ -142,13 +142,13 @@ def run_hallo2_inference(
     print(f"Running Hallo2 inference with config: {config}")
 
     # Run inference script
-    # The exact command depends on Hallo2's CLI interface
+    # Note: inference_long.py doesn't accept --output directly
+    # Output is placed in ./output/ by default
     cmd = [
         "python", str(HALLO2_DIR / "scripts" / "inference_long.py"),
-        "--config", str(HALLO2_DIR / "configs" / "inference" / "long.yaml"),
+        "-c", str(HALLO2_DIR / "configs" / "inference" / "long.yaml"),
         "--source_image", source_image_path,
         "--driving_audio", driving_audio_path,
-        "--output", output_path,
         "--pose_weight", str(pose_weight),
         "--face_weight", str(face_weight),
         "--lip_weight", str(lip_weight),
@@ -177,15 +177,27 @@ def run_hallo2_inference(
         raise Exception("Inference timed out after 10 minutes")
 
     # Find the output video
+    # Hallo2 outputs to ./output/ directory by default
     if os.path.exists(output_path):
         return output_path
 
-    # Try to find output in default location
+    # Try to find output in default Hallo2 location
+    hallo2_output_dir = HALLO2_DIR / "output"
+    if hallo2_output_dir.exists():
+        output_files = list(hallo2_output_dir.glob("*.mp4"))
+        if output_files:
+            generated = str(max(output_files, key=os.path.getctime))
+            # Copy to our output directory
+            import shutil
+            shutil.copy(generated, output_path)
+            return output_path
+
+    # Fallback: check our output directory
     output_files = list(OUTPUT_DIR.glob("*.mp4"))
     if output_files:
         return str(max(output_files, key=os.path.getctime))
 
-    raise Exception("No output video generated")
+    raise Exception("No output video generated. Check Hallo2 logs.")
 
 
 def run_hallo2_python(
